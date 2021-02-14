@@ -24,20 +24,20 @@ with open(os.path.join(module_path, "info.json")) as f:
 
 def test_announce_dashboard(test_client):
     """"""
-    response = test_client.get(url_for("login.logout"), follow_redirects=True)
+    response = test_client.get(url_for("auth.logout"), follow_redirects=True)
     print(request.path)
     assert response.status_code == 200
-    assert request.path == url_for("login.login")
+    assert request.path == url_for("auth.login")
 
     # check request to contact correctly redirects to login page
     response = test_client.get(
         module_info["url_prefix"] + "/dashboard", follow_redirects=True
     )
-    assert request.path == url_for("login.login")
+    assert request.path == url_for("auth.login")
 
     # Login and try to access the contact dashboard. It should return OK
     response = test_client.post(
-        url_for("login.login"),
+        url_for("auth.login"),
         data=dict(email="admin1@domain.com", password="pass"),
         follow_redirects=True,
     )
@@ -70,6 +70,7 @@ def test_announce_add_check(test_client):
     assert b"abc" in response.data
     assert b"def" in response.data
 
+
 def test_announce_add_check_wrong(test_client):
     """"""
     response = test_client.post(
@@ -77,16 +78,19 @@ def test_announce_add_check_wrong(test_client):
         data=dict(title="", content="abc_wrong"),
         follow_redirects=True,
     )
-    
-    announcement = Announcement.query.filter(Announcement.content == 'abc_wrong').first()
+
+    announcement = Announcement.query.filter(
+        Announcement.content == "abc_wrong"
+    ).first()
     assert announcement is None
+
 
 def test_announce_edit_check(test_client):
     """"""
-    announcement = Announcement(title='abcx', content='def')
+    announcement = Announcement(title="abcx", content="def")
     announcement.save()
 
-    assert Announcement.query.get(1).title == 'abcx'
+    assert Announcement.query.get(1).title == "abcx"
 
     response = test_client.post(
         url_for(module_info["module_name"] + ".edit_check", announce_id=1),

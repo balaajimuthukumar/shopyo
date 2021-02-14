@@ -54,6 +54,7 @@
 <li class="toctree-l1"><a class="reference internal" href="education.html">Education section</a></li>
 <li class="toctree-l1"><a class="reference internal" href="contrib.html">Contributing to Shopyo</a></li>
 <li class="toctree-l1"><a class="reference internal" href="modules.html">Modules/Apps</a></li>
+<li class="toctree-l1"><a class="reference internal" href="assets.html">Assets</a></li>
 <li class="toctree-l1"><a class="reference internal" href="templates.html">Templates</a></li>
 <li class="toctree-l1"><a class="reference internal" href="models.html">Models</a></li>
 <li class="toctree-l1"><a class="reference internal" href="views.html">Views</a></li>
@@ -127,6 +128,16 @@ shopyo db upgrade
 </div>
 <p><strong>Run server</strong></p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>shopyo runserver
+</pre></div>
+</div>
+<p><strong>Collect static</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python manage.py collectstatic
+</pre></div>
+</div>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python manage.py collectstatic demoapp
+</pre></div>
+</div>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python manage.py collectstatic box__somebox/demoapp
 </pre></div>
 </div>
 </div>

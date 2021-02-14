@@ -3,9 +3,8 @@
    :synopsis: Contains model of a user Record
 
 """
-
 import datetime
-
+from sqlalchemy.ext.hybrid import hybrid_property
 from flask_login import AnonymousUserMixin
 from flask_login import UserMixin
 from flask_login import login_manager
@@ -17,22 +16,19 @@ from shopyoapi.init import db
 from shopyoapi.models import PkModel
 
 role_user_link = db.Table(
-
     "role_user_link",
-
     db.Column(
         "user_id",
         db.Integer,
-        db.ForeignKey("users.id", ondelete='CASCADE'),
-        primary_key=True
+        db.ForeignKey("users.id", ondelete="CASCADE"),
+        primary_key=True,
     ),
-
     db.Column(
         "role_id",
         db.Integer,
-        db.ForeignKey("roles.id", ondelete='CASCADE'),
-        primary_key=True
-    )
+        db.ForeignKey("roles.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
 )
 
 
@@ -63,7 +59,7 @@ class User(UserMixin, PkModel):
     __tablename__ = "users"
 
     username = db.Column(db.String(100), unique=True)
-    password = db.Column(db.String(128), nullable=False)
+    _password = db.Column(db.String(128), nullable=False)
     first_name = db.Column(db.String(128))
     last_name = db.Column(db.String(128))
     is_admin = db.Column(db.Boolean, default=False)
@@ -71,19 +67,26 @@ class User(UserMixin, PkModel):
     date_registered = db.Column(
         db.DateTime, nullable=False, default=datetime.datetime.now()
     )
-    email_confirmed = db.Column(db.Boolean(), nullable=False, default=False)
+    is_email_confirmed = db.Column(db.Boolean(), nullable=False, default=False)
     email_confirm_date = db.Column(db.DateTime)
 
     # A user can have many roles and a role can have many users
     roles = db.relationship(
-        "Role", secondary=role_user_link, backref="users",
+        "Role",
+        secondary=role_user_link,
+        backref="users",
     )
 
-    def set_hash(self, password):
-        self.password = generate_password_hash(password, method="sha256")
+    @hybrid_property
+    def password(self):
+        return self._password
+
+    @password.setter
+    def password(self, plaintext):
+        self._password = generate_password_hash(plaintext, method="sha256")
 
     def check_hash(self, password):
-        return check_password_hash(self.password, password)
+        return check_password_hash(self._password, password)
 
     def generate_confirmation_token(self, email):
         serializer = URLSafeTimedSerializer(app.config["SECRET_KEY"])
@@ -106,5 +109,6 @@ class User(UserMixin, PkModel):
 
 class Role(PkModel):
     """A role for a user."""
+
     __tablename__ = "roles"
     name = db.Column(db.String(100), nullable=False)

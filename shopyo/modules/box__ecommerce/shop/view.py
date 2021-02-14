@@ -2,7 +2,6 @@ import json
 import os
 from datetime import datetime
 
-from flask import Blueprint
 from flask import current_app
 from flask import flash
 from flask import jsonify
@@ -14,14 +13,13 @@ from flask import url_for
 
 from flask_login import current_user
 
-from shopyoapi.enhance import get_setting
-from shopyoapi.enhance import set_setting
 from shopyoapi.forms import flash_errors
 from shopyoapi.html import notify_success
 from shopyoapi.html import notify_warning
 from shopyoapi.module import ModuleHelp
 
 from modules.box__default.admin.models import User
+from modules.box__default.settings.helpers import get_setting
 from modules.box__ecommerce.category.models import Category
 from modules.box__ecommerce.category.models import SubCategory
 from modules.box__ecommerce.product.models import Product
@@ -50,7 +48,7 @@ def get_product(product_id):
 def homepage():
     # cant be defined above but must be manually set each time
     # active_theme_dir = os.path.join(
-    #     dirpath, "..", "..", "themes", get_setting("ACTIVE_THEME")
+    #     dirpath, "..", "..", "themes", get_setting("ACTIVE_FRONT_THEME")
     # )
     # module_blueprint.template_folder = active_theme_dir
 
@@ -59,7 +57,7 @@ def homepage():
     cart_info = get_cart_data()
     context.update(cart_info)
     return render_template(
-        get_setting("ACTIVE_THEME") + "/index.html", **context
+        get_setting("ACTIVE_FRONT_THEME") + "/index.html", **context
     )
 
 
@@ -411,11 +409,13 @@ def checkout_process():
                 order.logged_in_customer_email = current_user.email
 
             if form.applyCoupon.data:
-                coupon = Coupon.query.filter(Coupon.string == form.coupon.data).first()
+                coupon = Coupon.query.filter(
+                    Coupon.string == form.coupon.data
+                ).first()
                 if coupon:
                     order.coupon = coupon
                 else:
-                    flash(notify_warning('Invalid Coupon'))
+                    flash(notify_warning("Invalid Coupon"))
 
             cart_info = get_cart_data()
             cart_data = cart_info["cart_data"]

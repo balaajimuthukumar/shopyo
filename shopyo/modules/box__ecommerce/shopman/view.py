@@ -5,11 +5,10 @@
 import json
 import os
 
-from flask import current_app
 from flask import flash
 from flask import request
 
-from shopyoapi.enhance import get_setting
+from modules.box__default.settings.helpers import get_setting
 from shopyoapi.enhance import set_setting
 from shopyoapi.forms import flash_errors
 
@@ -43,7 +42,13 @@ def get_product(barcode):
 def dashboard():
     context = mhelp.context()
     form = CurrencyForm()
-    with open(os.path.join(mhelp.dirpath, "data", "currency.json",)) as f:
+    with open(
+        os.path.join(
+            mhelp.dirpath,
+            "data",
+            "currency.json",
+        )
+    ) as f:
         currencies = json.load(f)
     currency_choices = [(c["cc"], c["name"]) for c in currencies]
     form.currency.choices = currency_choices

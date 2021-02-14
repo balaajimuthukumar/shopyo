@@ -4,6 +4,7 @@ import uuid
 
 from flask import Blueprint
 from flask import current_app
+
 # from flask import flash
 from flask import jsonify
 from flask import redirect
@@ -18,7 +19,6 @@ from werkzeug.utils import secure_filename
 
 from shopyoapi.file import delete_file
 from shopyoapi.file import unique_filename
-from shopyoapi.html import notify_warning
 from shopyoapi.init import db
 from shopyoapi.init import ma
 from shopyoapi.init import productphotos

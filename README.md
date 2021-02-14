@@ -3,8 +3,11 @@
 <h1 align="center">
   <br>
   <a href="https://github.com/Abdur-rahmaanJ"><img src="https://github.com/Abdur-rahmaanJ/shopyo/blob/dev/github_banner.png" alt="shopyo" width="" height=""></a>
+  
+  
 </h1>
 
+[![codecov](https://codecov.io/gh/Abdur-rahmaanJ/shopyo/branch/dev/graph/badge.svg?token=J4TL2MDTSS)](https://codecov.io/gh/Abdur-rahmaanJ/shopyo)
 
 Featured on [Weekly Python issue 436](https://newsletry.com/Home/Python%20Weekly/9a578693-14ba-47c5-8a8e-08d7b0139fe7) 🌟
 
@@ -12,9 +15,11 @@ A 45 mins talk was dedicated to it at [EuroPython](https://youtu.be/rkzXQOC1T0Q)
 
 # What?
 
-Your back office. Use it with any front you like. Headless support coming soon. 
+Your next-level modular web framework. Headless support coming soon. 
 
-Use it for your next web project.
+Built on top of Flask, it offers most Django features, sometimes a tidbit more with far more flexibility.
+
+It ships with common business needs and an ecommerce modules by default
 
 # Have a go!
 
@@ -32,6 +37,10 @@ python manage.py rundebug
 ```
 
 go to http://127.0.0.1:5000/dashboard with credentials admin@domain.com / pass
+
+# First time contributing?
+
+We have a 100% first-timers friendly policy. Check out the [testimonials](https://github.com/Abdur-rahmaanJ/shopyo/discussions/307).
 
 # Big??
 

@@ -6,9 +6,7 @@ import os
 # from flask import flash
 # from flask import request
 from flask import Blueprint
-from flask import current_app
 from flask import redirect
-from flask import render_template
 from flask import url_for
 
 #
@@ -41,7 +39,7 @@ module_blueprint = globals()["{}_blueprint".format(module_info["module_name"])]
 def index():
     # cant be defined above but must be manually set each time
     # active_theme_dir = os.path.join(
-    #     dirpath, "..", "..", "themes", get_setting("ACTIVE_THEME")
+    #     dirpath, "..", "..", "themes", get_setting("ACTIVE_FRONT_THEME")
     # )
     # module_blueprint.template_folder = active_theme_dir
 

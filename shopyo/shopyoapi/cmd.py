@@ -1,68 +1,34 @@
-'''
+"""
 commandline utilities functions
-
-
-# Past view.py code
-
-import os
-import json
-
-from flask import Blueprint
-# from flask import render_template
-# from flask import url_for
-# from flask import redirect
-# from flask import flash
-# from flask import request
-
-# #
-# from shopyoapi.html import notify_success
-# from shopyoapi.forms import flash_errors
-
-dirpath = os.path.dirname(os.path.abspath(__file__))
-module_info = {}
-
-with open(dirpath + "/info.json") as f:
-    module_info = json.load(f)
-
-globals()['{}_blueprint'.format(module_info["module_name"])] = Blueprint(
-    "{}".format(module_info["module_name"]),
-    __name__,
-    template_folder="templates",
-    url_prefix=module_info["url_prefix"],
-)
-
-
-module_blueprint = globals()['{}_blueprint'.format(module_info["module_name"])]
-
-@module_blueprint.route("/")
-def index():
-    return module_info['display_string']
-'''
-
-import json
+"""
 import os
 import re
-import shutil
 import subprocess
 import sys
+import importlib
 
-from shopyoapi.uploads import add_admin
-from shopyoapi.uploads import add_setting
-from shopyoapi.uploads import add_uncategorised_category
+from shopyoapi.init import db
+from shopyoapi.cmd_helper import tryrmcache
+from shopyoapi.cmd_helper import tryrmfile
+from shopyoapi.cmd_helper import tryrmtree
+from shopyoapi.path import root_path
+from shopyoapi.path import static_path
+from shopyoapi.path import modules_path
+from shopyoapi.file import trymkdir
+from shopyoapi.file import trymkfile
+from shopyoapi.file import get_folders
+from shopyoapi.file import trycopytree
 
-# from .file import trycopytree
-# from .file import trycopy
-from .file import trymkdir
-from .file import trymkfile
 
-
-def clean():
+def clean(app):
     """
-    cleans shopyo.db __pycache__ and migrations/
+    Deletes shopyo.db and migrations/ if present in current working directory.
+    Deletes all __pycache__ folders starting from current working directory
+    all the way to leaf directory.
 
     Parameters
     ----------
-
+        - app: flask app that that need to be cleaned
 
     Returns
     -------
@@ -70,21 +36,15 @@ def clean():
         ...
 
     """
-    if os.path.exists("shopyo.db"):
-        os.remove("shopyo.db")
-        print("shopyo.db successfully deleted")
-    else:
-        print("shopyo.db doesn't exist")
-    if os.path.exists("__pycache__"):
-        shutil.rmtree("__pycache__")
-        print("__pycache__ successfully deleted")
-    else:
-        print("__pycache__ doesn't exist")
-    if os.path.exists("migrations"):
-        shutil.rmtree("migrations")
-        print("migrations successfully deleted")
-    else:
-        print("migrations folder doesn't exist")
+    # getting app context creates the shopyo.db file even if it is not present
+    with app.test_request_context():
+        db.drop_all()
+        db.engine.execute("DROP TABLE IF EXISTS alembic_version;")
+        print("[x] all tables dropped")
+
+    tryrmcache(os.getcwd())
+    tryrmfile(os.path.join(os.getcwd(), "shopyo.db"))
+    tryrmtree(os.path.join(os.getcwd(), "migrations"))
 
 
 def initialise():
@@ -104,9 +64,6 @@ def initialise():
     SEP_CHAR = "#"
     SEP_NUM = 23
 
-    with open("config.json", "r") as config:
-        config = json.load(config)
-
     print("Creating Db")
     print(SEP_CHAR * SEP_NUM, end="\n\n")
     subprocess.run(
@@ -122,18 +79,44 @@ def initialise():
         [sys.executable, "manage.py", "db", "upgrade"], stdout=subprocess.PIPE
     )
 
-    print("Initialising User")
+    print("Collecting static")
     print(SEP_CHAR * SEP_NUM, end="\n\n")
-    add_admin(config["admin_user"]["email"], config["admin_user"]["password"])
+    subprocess.run(
+        [sys.executable, "manage.py", "collectstatic"], stdout=subprocess.PIPE
+    )
 
-    print("Initialising Settings")
-    print(SEP_CHAR * SEP_NUM, end="\n\n")
-    for name, value in config["settings"].items():
-        add_setting(name, value)
+    # Uploads
+    for folder in os.listdir(os.path.join(root_path, "modules")):
+        if folder.startswith("__"):  # ignore __pycache__
+            continue
+        if folder.startswith("box__"):
+            # boxes
+            for sub_folder in os.listdir(
+                os.path.join(root_path, "modules", folder)
+            ):
+                if sub_folder.startswith("__"):  # ignore __pycache__
+                    continue
+                elif sub_folder.endswith(".json"):  # box_info.json
+                    continue
 
-    print("Adding category and subcategory: uncategorised")
-    print(SEP_CHAR * SEP_NUM, end="\n\n")
-    add_uncategorised_category()
+                try:
+                    upload = importlib.import_module(
+                        "modules.{}.{}.upload".format(folder, sub_folder)
+                    )
+                    upload.upload()
+                except ImportError as e:
+                    # print(e)
+                    pass
+        else:
+            # apps
+            try:
+                upload = importlib.import_module(
+                    "modules.{}.upload".format(folder)
+                )
+                upload.upload()
+            except ImportError as e:
+                # print(e)
+                pass
 
     print("Done!")
 
@@ -167,6 +150,7 @@ def create_module(modulename, base_path=None):
     trymkdir(f"{base_path}/templates")
     trymkdir(f"{base_path}/templates/{modulename}")
     trymkdir(f"{base_path}/tests")
+    trymkdir(f"{base_path}/static")
     test_func_content = """
 Please add your functional tests to this file.
 """
@@ -174,12 +158,10 @@ Please add your functional tests to this file.
 Please add your models tests to this file.
 """
     trymkfile(
-        f"{base_path}/tests/test_{modulename}_functional.py",
-        test_func_content
+        f"{base_path}/tests/test_{modulename}_functional.py", test_func_content
     )
     trymkfile(
-        f"{base_path}/tests/test_{modulename}_models.py",
-        test_model_content
+        f"{base_path}/tests/test_{modulename}_models.py", test_model_content
     )
     view_content = """
 from shopyoapi.module import ModuleHelp
@@ -233,7 +215,7 @@ def index():
 
     trymkdir(f"{base_path}/templates/{modulename}/blocks")
     trymkfile(f"{base_path}/templates/{modulename}/blocks/sidebar.html", "")
-    dashboard_file_content = '''
+    dashboard_file_content = """
 {% extends "base/module_base.html" %}
 {% set active_page = info['display_string']+' dashboard' %}
 {% block pagehead %}
@@ -253,10 +235,10 @@ def index():
     </div>
  </div>
 {% endblock %}
-'''
+"""
     trymkfile(
         f"{base_path}/templates/{modulename}/dashboard.html",
-        dashboard_file_content
+        dashboard_file_content,
     )
     global_file_content = """
 available_everywhere = {
@@ -338,3 +320,79 @@ def create_module_in_box(modulename, boxname):
     else:
         print(f"Creating module {module_path}")
         create_module(modulename, base_path=module_path)
+
+
+def collectstatic(target_module=None):
+    """
+    Copies module/static into /static/modules/module
+    in static it becomes like
+    static/
+        modules/
+            box_something/
+                modulename
+            modulename2
+
+    Parameters
+    ----------
+    target_module: str
+        name of module, in alphanumeric-underscore,
+        supports module or box__name/module
+
+    Returns
+    -------
+    None
+
+
+    """
+    modules_path_in_static = os.path.join(static_path, "modules")
+
+    if target_module is None:
+        # clear modules dir if exists.
+        tryrmtree(modules_path_in_static)
+        # look for static folders in all project
+        for folder in get_folders(modules_path):
+            if folder.startswith("box__"):
+                box_path = os.path.join(modules_path, folder)
+                for subfolder in get_folders(box_path):
+                    module_name = subfolder
+                    module_static_folder = os.path.join(
+                        box_path, subfolder, "static"
+                    )
+                    if not os.path.exists(module_static_folder):
+                        continue
+                    module_in_static_dir = os.path.join(
+                        modules_path_in_static, folder, module_name
+                    )
+                    trycopytree(module_static_folder, module_in_static_dir)
+            else:
+                module_name = folder
+                module_static_folder = os.path.join(
+                    modules_path, folder, "static"
+                )
+                if not os.path.exists(module_static_folder):
+                    continue
+                module_in_static_dir = os.path.join(
+                    modules_path_in_static, module_name
+                )
+                trycopytree(module_static_folder, module_in_static_dir)
+    else:
+        # copy only module's static folder
+        module_static_folder = os.path.join(
+            modules_path, target_module, "static"
+        )
+        if os.path.exists(module_static_folder):
+            if target_module.startswith("box__"):
+                if "/" in target_module:
+                    module_name = target_module.split("/")[1]
+                else:
+                    print("Could not understand module name")
+                    sys.exit()
+            else:
+                module_name = target_module
+            module_in_static_dir = os.path.join(
+                modules_path_in_static, module_name
+            )
+            tryrmtree(module_in_static_dir)
+            trycopytree(module_static_folder, module_in_static_dir)
+        else:
+            print("Module does not exist")

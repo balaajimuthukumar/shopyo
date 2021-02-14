@@ -25,8 +25,7 @@ def new_user():
     """
     A pytest fixture that returns a user model object
     """
-    user = User(email="newuser@domain.com")
-    user.set_hash("pass")
+    user = User(email="newuser@domain.com", password="pass")
     user.first_name = "New"
     user.last_name = "User"
     return user
@@ -37,8 +36,7 @@ def non_admin_user():
     """
     A pytest fixture that returns a non admin user
     """
-    user = User(email="admin1@domain.com")
-    user.set_hash("pass")
+    user = User(email="admin1@domain.com", password="pass")
     return user
 
 
@@ -47,8 +45,7 @@ def admin_user():
     """
     A pytest fixture that returns an admin user
     """
-    user = User(email="admin2@domain.com", is_admin=True)
-    user.set_hash("pass")
+    user = User(email="admin2@domain.com", is_admin=True, password="pass")
     return user
 
 
@@ -147,20 +144,19 @@ class AuthActions:
 
     def login(self, user, password="pass"):
         return self._client.post(
-            url_for("login.login"),
+            url_for("auth.login"),
             data=dict(email=user.email, password=password),
             follow_redirects=True,
         )
 
     def logout(self):
-        return self._client.get(
-            url_for("login.logout"), follow_redirects=True)
+        return self._client.get(url_for("auth.logout"), follow_redirects=True)
 
 
 # Want TO USE THE BELOW 2 FIXTURES TO DYNAMICALLY
 # GET THE ROUTES FOR A GIVEN MODULE BUT UNABLE TO
 # PARAMETERIZE THE LIST OF ROUTES RETURNED FROM THE FIXTURE
-# CURRENTLY THIS NOT POSSIBLE WITH FIXTURES IN PYTEST
+# CURRENTLY THIS NOT POSSIBLE WITH FIXTURES IN PYTEST @rehmanis
 
 # @pytest.fixture(scope="module")
 # def get_module_routes(request, get_routes):

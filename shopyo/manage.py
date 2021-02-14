@@ -1,21 +1,19 @@
 import subprocess
-
 import click
 
 from app import app
-
 from shopyoapi.cmd import clean
-
 from shopyoapi.cmd import create_box
 from shopyoapi.cmd import create_module
 from shopyoapi.cmd import create_module_in_box
 from shopyoapi.cmd import initialise
+from shopyoapi.cmd import collectstatic
 from shopyoapi.database import autoload_models
 from shopyoapi.info import printinfo
 
 
 def runserver():
-    app.run(host="0.0.0.0")
+    app.run(host="0.0.0.0", debug=False)
 
 
 @click.command()
@@ -26,7 +24,7 @@ def process(args):
         autoload_models()
         initialise()
     elif args[0] == "clean":
-        clean()
+        clean(app)
     elif args[0] == "runserver":
         runserver()
     elif args[0] == "rundebug":
@@ -36,17 +34,20 @@ def process(args):
                 app.run(debug=True, host="0.0.0.0", port=int(args[1]))
         except IndexError as e:
             raise e
+    elif args[0] == "collectstatic":
+        if len(args) == 1:
+            collectstatic()
+        elif len(args) == 2:
+            collectstatic(target_module=args[1])
     elif args[0] == "test":
         print("test ok")
     elif args[0] == "startapp" and args[1]:
         create_module(args[1])
-
     elif args[0] == "startbox" and args[1]:
         create_box(args[1])
     elif args[0] == "startsubapp" and args[1] and args[3]:
         if args[2].lower() == "in":
             create_module_in_box(args[1], args[3])
-
     elif args[0] == "db":
         try:
             autoload_models()
